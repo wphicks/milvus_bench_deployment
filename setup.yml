@@ -1,0 +1,40 @@
+---
+- name: Clone necessary repos
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Clone Milvus
+      git:
+        repo: git@github.com:wphicks/milvus.git
+        dest: "{{ inventory_dir }}/milvus"
+        version: dev-cagra2
+      tags: repo
+
+    - name: Build Milvus libs
+      command: CHECK_BUILDER=1 ./build/builder_gpu.sh make milvus-gpu
+      args:
+        chdir: "{{ inventory_dir }}/milvus"
+      tags: build
+
+    - name: Copy Milvus libs to expected location
+      synchronize:
+        src: "{{ inventory_dir }}/milvus/build/cmake_build/lib/"
+        dest: "{{ inventory_dir }}/milvus/lib/"
+        delete: yes
+      tags: milvus
+
+    - name: Build Milvus Docker image
+      docker_image:
+        name: gitlab-master.nvidia.com:5005/whicks/milvus:2.3.1-preview
+        path: "{{ inventory_dir }}/milvus"
+        dockerfile: build/docker/milvus/gpu/ubuntu20.04/Dockerfile
+      tags: build
+
+    - name: Clone VectorDBBench
+      git:
+        repo: git@github.com:wphicks/VectorDBBench.git
+        dest: "{{ inventory_dir }}/VectorDBBench"
+        version: main
+      tags: repo
