@@ -38,3 +38,52 @@
         dest: "{{ inventory_dir }}/VectorDBBench"
         version: main
       tags: repo
+
+    - name: Build VectorDBBench Docker image
+      docker_image:
+        name: gitlab-master.nvidia.com:5005/whicks/VectorDBBench:2.3.1-preview
+        path: "{{ inventory_dir }}"
+        dockerfile: Dockerfile
+      tags: build
+
+    - name: Create 'volumes' directory
+      file:
+        path: "{{ inventory_dir }}/volumes"
+        state: directory
+      tags: setup
+
+    - name: Create 'volumes/etcd' directory
+      file:
+        path: "{{ inventory_dir }}/volumes/etcd"
+        state: directory
+      tags: setup
+
+    - name: Create 'volumes/minio' directory
+      file:
+        path: "{{ inventory_dir }}/volumes/minio"
+        state: directory
+      tags: setup
+
+    - name: Create 'volumes/milvus' directory
+      file:
+        path: "{{ inventory_dir }}/volumes/milvus"
+        state: directory
+      tags: setup
+
+    - name: Create 'volumes/dataset' directory
+      file:
+        path: "{{ inventory_dir }}/volumes/dataset"
+        state: directory
+      tags: setup
+
+    - name: Create 'volumes/results' directory
+      file:
+        path: "{{ inventory_dir }}/volumes/results"
+        state: directory
+      tags: setup
+
+    - name: Deploy Milvus and VectorDBBench
+      command: docker-compose up -d
+      args:
+        chdir: "{{ inventory_dir }}"
+      tags: docker_compose
