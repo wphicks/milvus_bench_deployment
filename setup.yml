@@ -2,48 +2,69 @@
 - name: Clone necessary repos
   hosts: localhost
   connection: local
-  gather_facts: false
 
   tasks:
     - name: Clone Milvus
       git:
-        repo: git@github.com:wphicks/milvus.git
+        repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
         version: dev-cagra2
       tags: repo
 
-    - name: Build Milvus libs
-      command: CHECK_BUILDER=1 ./build/builder_gpu.sh make milvus-gpu
+    - name: Create '.docker-gpu' directory
+      file:
+        path: "{{ inventory_dir }}/milvus/.docker-gpu"
+        state: directory
+      tags: build
+
+    - name: Clean Milvus build
+      command: "./build/builder_gpu.sh make clean"
       args:
         chdir: "{{ inventory_dir }}/milvus"
-      tags: build
+      tags: libs
+
+    - name: Build Milvus libs
+      command: "./build/builder_gpu.sh make milvus-gpu"
+      args:
+        chdir: "{{ inventory_dir }}/milvus"
+      environment:
+        CHECK_BUILDER: 1
+      tags: libs
 
     - name: Copy Milvus libs to expected location
       synchronize:
-        src: "{{ inventory_dir }}/milvus/build/cmake_build/lib/"
+        src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
         dest: "{{ inventory_dir }}/milvus/lib/"
         delete: yes
-      tags: milvus
+      tags:
+          - libs
+          - build
 
     - name: Build Milvus Docker image
       docker_image:
         name: gitlab-master.nvidia.com:5005/whicks/milvus:2.3.1-preview
-        path: "{{ inventory_dir }}/milvus"
-        dockerfile: build/docker/milvus/gpu/ubuntu20.04/Dockerfile
+        source: build
+        build:
+          path: "{{ inventory_dir }}/milvus"
+          dockerfile: "{{ inventory_dir }}/milvus/build/docker/milvus/gpu/ubuntu20.04/Dockerfile"
+        force_source: true
       tags: build
 
     - name: Clone VectorDBBench
       git:
-        repo: git@github.com:wphicks/VectorDBBench.git
+        repo: https://github.com/wphicks/VectorDBBench.git
         dest: "{{ inventory_dir }}/VectorDBBench"
         version: main
       tags: repo
 
     - name: Build VectorDBBench Docker image
       docker_image:
-        name: gitlab-master.nvidia.com:5005/whicks/VectorDBBench:2.3.1-preview
-        path: "{{ inventory_dir }}"
-        dockerfile: Dockerfile
+        name: gitlab-master.nvidia.com:5005/whicks/vectordbbench:2.3.1-preview
+        source: build
+        build:
+          path: "{{ inventory_dir }}"
+          dockerfile: "{{ inventory_dir }}/Dockerfile"
+        force_source: true
       tags: build
 
     - name: Create 'volumes' directory
