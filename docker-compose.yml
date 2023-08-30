@@ -28,8 +28,8 @@ services:
       timeout: 20s
       retries: 3
 
-  standalone:
-    container_name: milvus-standalone
+  milvus:
+    container_name: milvus-milvus
     image: gitlab-master.nvidia.com:5005/whicks/milvus:2.3.1-preview
     # image: milvusdb/milvus:v2.3.0-gpu
     command: ["milvus", "run", "standalone"]
@@ -37,8 +37,6 @@ services:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
       KNOWHERE_STREAMS_PER_GPU: 16
-    ports:
-      - "19530:19530"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
     deploy:
@@ -48,6 +46,9 @@ services:
             - driver: nvidia
               capabilities: ["gpu"]
               device_ids: ["0"]
+    build:
+      context: ./milvus
+      dockerfile: ./milvus/build/docker/milvus/gpu/ubuntu20.04/Dockerfile
     depends_on:
       - "etcd"
       - "minio"
@@ -57,10 +58,18 @@ services:
     image: gitlab-master.nvidia.com:5005/whicks/milvus:vdb-2.3.1-preview
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/dataset:/tmp/vector_db_bench/dataset
+    depends_on:
+      - "milvus"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+
+  nginx:
+    image: nginx
     ports:
       - "8501:8501"
-    depends_on:
-      - "standalone"
+    volumes:
+      - .nginx.conf:/etc/nginx/nginx.conf:ro
 networks:
   default:
     name: milvus

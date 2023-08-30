@@ -9,19 +9,26 @@
         repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
         version: dev-cagra2
-      tags: repo
+      tags:
+        - repo
+        - always
 
     - name: Create '.docker-gpu' directory
       file:
         path: "{{ inventory_dir }}/milvus/.docker-gpu"
         state: directory
-      tags: build
+      tags:
+        - build
+        - always
 
     - name: Clean Milvus build
       command: "./build/builder_gpu.sh make clean"
       args:
         chdir: "{{ inventory_dir }}/milvus"
-      tags: libs
+      tags:
+          - build
+          - milvus-build
+          - never
 
     - name: Build Milvus libs
       command: "./build/builder_gpu.sh make milvus-gpu"
@@ -31,6 +38,7 @@
         CHECK_BUILDER: 1
       tags:
           - build
+          - milvus-build
           - never
 
     - name: Copy Milvus libs to expected location
@@ -40,18 +48,16 @@
         delete: yes
       tags:
           - build
+          - milvus-build
           - never
 
     - name: Build Milvus Docker image
-      docker_image:
-        name: gitlab-master.nvidia.com:5005/whicks/milvus:2.3.1-preview
-        source: build
-        build:
-          path: "{{ inventory_dir }}/milvus"
-          dockerfile: "{{ inventory_dir }}/milvus/build/docker/milvus/gpu/ubuntu20.04/Dockerfile"
-        force_source: true
+      command: docker-compose build milvus
+      args:
+        chdir: "{{ inventory_dir }}"
       tags:
           - build
+          - milvus-build
           - never
 
     - name: Clone VectorDBBench
@@ -59,65 +65,87 @@
         repo: https://github.com/wphicks/VectorDBBench.git
         dest: "{{ inventory_dir }}/VectorDBBench"
         version: dev-gpu
-      tags: repo
+      tags:
+        - repo
+        - always
 
     - name: Build VectorDBBench Docker image
-      docker_image:
-        name: gitlab-master.nvidia.com:5005/whicks/milvus:vdb-2.3.1-preview
-        source: build
-        build:
-          path: "{{ inventory_dir }}"
-          dockerfile: "{{ inventory_dir }}/Dockerfile"
-        force_source: true
+      command: docker-compose build benchmark
+      args:
+        chdir: "{{ inventory_dir }}"
       tags:
           - build
+          - vdb-build
           - never
 
     - name: Create 'volumes' directory
       file:
         path: "{{ inventory_dir }}/volumes"
         state: directory
-      tags: setup
+      tags:
+        - setup
+        - always
 
     - name: Create 'volumes/etcd' directory
       file:
         path: "{{ inventory_dir }}/volumes/etcd"
         state: directory
-      tags: setup
+      tags:
+        - setup
+        - always
 
     - name: Create 'volumes/minio' directory
       file:
         path: "{{ inventory_dir }}/volumes/minio"
         state: directory
-      tags: setup
+      tags:
+        - setup
+        - always
 
     - name: Create 'volumes/milvus' directory
       file:
         path: "{{ inventory_dir }}/volumes/milvus"
         state: directory
-      tags: setup
+      tags:
+        - setup
+        - always
 
     - name: Create 'volumes/dataset' directory
       file:
         path: "{{ inventory_dir }}/volumes/dataset"
         state: directory
-      tags: setup
+      tags:
+        - setup
+        - always
 
     - name: Create 'volumes/results' directory
       file:
         path: "{{ inventory_dir }}/volumes/results"
         state: directory
-      tags: setup
+      tags:
+        - setup
+        - always
+
+    - name: Setup authentication
 
     - name: Pull Milvus and VectorDBBench if not building
       command: docker-compose pull
       args:
         chdir: "{{ inventory_dir }}"
-      when: "'build' not in (play_tags | default([])"
-      tags: docker_compose
+      when: "'build' not in (play_tags | default([])) and 'vdb-build' not in (play_tags | default([])) and 'milvus-build' not in (play_tags | default([]))"
+      tags:
+        - deploy
+
+    - name: Confirm Docker network available
+      docker_network:
+        name: milvus
+        state: present
+      tags:
+        - deploy
 
     - name: Deploy Milvus and VectorDBBench
       command: docker-compose up -d
       args:
         chdir: "{{ inventory_dir }}"
-      tags: docker_compose
+      tags:
+        - deploy

@@ -1,3 +1,4 @@
 milvus
 VectorDBBench
 volumes
+nginx/.htpasswd
