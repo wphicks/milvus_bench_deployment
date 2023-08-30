@@ -58,8 +58,13 @@ services:
     image: gitlab-master.nvidia.com:5005/whicks/milvus:vdb-2.3.1-preview
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/dataset:/tmp/vector_db_bench/dataset
+    environment:
+      - STREAMLIT_CONFIG_SERVER_ENABLE_CORS=false
+      - STREAMLIT_CONFIG_SERVER_ENABLECORS=false
     depends_on:
       - "milvus"
+        # ports:
+        # - "8501:8501"
     build:
       context: ./
       dockerfile: Dockerfile
@@ -67,9 +72,11 @@ services:
   nginx:
     image: nginx
     ports:
-      - "8501:8501"
+      - "8502:8502"
+    depends_on:
+      - "benchmark"
     volumes:
-      - .nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx:/etc/nginx/:ro
 networks:
   default:
     name: milvus

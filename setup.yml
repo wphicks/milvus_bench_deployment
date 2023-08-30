@@ -134,22 +134,41 @@
         - deploy
         - credentials
 
-    - name: Prompt for username and password
-      vars_prompt:
-        - name: username
-          prompt: "Enter username:"
-          private: no
-        - name: password
-          prompt: "Enter password:"
-          private: yes
+    - pause:
+        prompt: "Enter username:"
+        echo: true
       when: "(htpasswd_file.stat.exists == false) or 'credentials' in (ansible_run_tags | default([]))"
+      register: username
+      no_log: true
       tags:
         - deploy
         - credentials
 
-    - name: Run docker command to create .htpasswd
-      command: "docker run --rm -v {{ ansible_env.PWD }}/nginx:/etc/nginx alpine htpasswd -c /etc/nginx/.htpasswd {{ username }} {{ password }}"
+    - pause:
+        prompt: "Enter password:"
+        echo: false
+      when: "(htpasswd_file.stat.exists == false) or 'credentials' in (ansible_run_tags | default([]))"
+      register: password
+      no_log: true
+      tags:
+        - deploy
+        - credentials
+
+    - name: Run docker command to create .htpasswd entry
+      command: "docker run --rm xmartlabs/htpasswd {{ username.user_input }} {{ password.user_input }}"
       when: "htpasswd_file.stat.exists == false or 'credentials' in (ansible_run_tags | default([]))"
+      no_log: true
+      register: credentials_line
+      tags:
+        - deploy
+        - credentials
+
+    - name: Append to .htpasswd
+      lineinfile:
+        path: "nginx/.htpasswd"
+        line: "{{ credentials_line.stdout }}"
+        create: yes
+      when: credentials_line is changed
       tags:
         - deploy
         - credentials
