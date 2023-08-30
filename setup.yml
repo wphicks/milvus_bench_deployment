@@ -126,13 +126,39 @@
         - setup
         - always
 
-    - name: Setup authentication
+    - name: Check if .htpasswd file exists
+      stat:
+        path: nginx/.htpasswd
+      register: htpasswd_file
+      tags:
+        - deploy
+        - credentials
+
+    - name: Prompt for username and password
+      vars_prompt:
+        - name: username
+          prompt: "Enter username:"
+          private: no
+        - name: password
+          prompt: "Enter password:"
+          private: yes
+      when: "(htpasswd_file.stat.exists == false) or 'credentials' in (ansible_run_tags | default([]))"
+      tags:
+        - deploy
+        - credentials
+
+    - name: Run docker command to create .htpasswd
+      command: "docker run --rm -v {{ ansible_env.PWD }}/nginx:/etc/nginx alpine htpasswd -c /etc/nginx/.htpasswd {{ username }} {{ password }}"
+      when: "htpasswd_file.stat.exists == false or 'credentials' in (ansible_run_tags | default([]))"
+      tags:
+        - deploy
+        - credentials
 
     - name: Pull Milvus and VectorDBBench if not building
       command: docker-compose pull
       args:
         chdir: "{{ inventory_dir }}"
-      when: "'build' not in (play_tags | default([])) and 'vdb-build' not in (play_tags | default([])) and 'milvus-build' not in (play_tags | default([]))"
+      when: "'build' not in (ansible_run_tags | default([])) and 'vdb-build' not in (ansible_run_tags | default([])) and 'milvus-build' not in (ansible_run_tags | default([]))"
       tags:
         - deploy
 
