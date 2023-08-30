@@ -29,7 +29,9 @@
         chdir: "{{ inventory_dir }}/milvus"
       environment:
         CHECK_BUILDER: 1
-      tags: libs
+      tags:
+          - build
+          - never
 
     - name: Copy Milvus libs to expected location
       synchronize:
@@ -37,8 +39,8 @@
         dest: "{{ inventory_dir }}/milvus/lib/"
         delete: yes
       tags:
-          - libs
           - build
+          - never
 
     - name: Build Milvus Docker image
       docker_image:
@@ -48,24 +50,28 @@
           path: "{{ inventory_dir }}/milvus"
           dockerfile: "{{ inventory_dir }}/milvus/build/docker/milvus/gpu/ubuntu20.04/Dockerfile"
         force_source: true
-      tags: build
+      tags:
+          - build
+          - never
 
     - name: Clone VectorDBBench
       git:
         repo: https://github.com/wphicks/VectorDBBench.git
         dest: "{{ inventory_dir }}/VectorDBBench"
-        version: main
+        version: dev-gpu
       tags: repo
 
     - name: Build VectorDBBench Docker image
       docker_image:
-        name: gitlab-master.nvidia.com:5005/whicks/vectordbbench:2.3.1-preview
+        name: gitlab-master.nvidia.com:5005/whicks/milvus:vdb-2.3.1-preview
         source: build
         build:
           path: "{{ inventory_dir }}"
           dockerfile: "{{ inventory_dir }}/Dockerfile"
         force_source: true
-      tags: build
+      tags:
+          - build
+          - never
 
     - name: Create 'volumes' directory
       file:
@@ -102,6 +108,13 @@
         path: "{{ inventory_dir }}/volumes/results"
         state: directory
       tags: setup
+
+    - name: Pull Milvus and VectorDBBench if not building
+      command: docker-compose pull
+      args:
+        chdir: "{{ inventory_dir }}"
+      when: "'build' not in (play_tags | default([])"
+      tags: docker_compose
 
     - name: Deploy Milvus and VectorDBBench
       command: docker-compose up -d

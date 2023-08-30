@@ -54,7 +54,7 @@ services:
 
   benchmark:
     container_name: milvus-vectordbbench
-    image: gitlab-master.nvidia.com:5005/whicks/vectordbbench:2.3.1-preview
+    image: gitlab-master.nvidia.com:5005/whicks/milvus:vdb-2.3.1-preview
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/dataset:/tmp/vector_db_bench/dataset
     ports:
