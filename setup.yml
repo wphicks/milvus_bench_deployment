@@ -52,7 +52,7 @@
       environment:
         CHECK_BUILDER: 1
       register: build_milvus_libs
-      when: clean_milvus is succeeded
+      when: clean_milvus is defined and clean_milvus.changed
 
     - name: Copy Milvus libs to expected location
       synchronize:
@@ -60,7 +60,7 @@
         dest: "{{ inventory_dir }}/milvus/lib/"
         delete: yes
       register: copy_milvus_libs
-      when: build_milvus_libs is succeeded
+      when: build_milvus_libs is defined and build_milvus_libs.changed
 
     - name: Build Milvus Docker image
       command: docker-compose build milvus
@@ -69,7 +69,7 @@
       environment:
         TAG: "{{ commit.stdout }}"
       register: build_milvus_image
-      when: copy_milvus_libs is succeeded
+      when: copy_milvus_libs is defined and copy_milvus_libs.changed
 
     - name: Push Milvus Docker image
       command: docker-compose push milvus
@@ -78,7 +78,7 @@
       environment:
         TAG: "{{ commit.stdout }}"
       register: build_milvus_image
-      when: build_milvus_image is succeeded and repo_status.rc == 0
+      when: build_milvus_image is defined and build_milvus_image.changed and repo_status.rc == 0
       ignore_errors: true
 
     - name: Clone VectorDBBench
@@ -112,7 +112,7 @@
         chdir: "{{ inventory_dir }}"
       environment:
         TAG: "{{ commit.stdout }}"
-      when: build_vdbb_image is succeeded and repo_status.rc == 0
+      when: build_vdbb_image is defined and build_vdbb_image.changed and repo_status.rc == 0
       ignore_errors: true
 
     - name: Create 'volumes' directory
