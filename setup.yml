@@ -42,7 +42,7 @@
       args:
         chdir: "{{ inventory_dir }}/milvus"
       register: clean_milvus
-      when: pull_milvus is failed || pull_milvus is skipped
+      when: pull_milvus is failed or pull_milvus is skipped
 
     - name: Build Milvus libs
       command: "./build/builder_gpu.sh make milvus-gpu"
@@ -103,7 +103,7 @@
       environment:
         TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
       register: build_vdbb_image
-      when: pull_vdbb is failed || pull_vdbb is skipped
+      when: pull_vdbb is failed or pull_vdbb is skipped
 
     - name: Push VectorDBBench Docker image
       command: docker-compose push benchmark
