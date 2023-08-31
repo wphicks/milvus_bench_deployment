@@ -30,8 +30,7 @@ services:
 
   milvus:
     container_name: milvus-milvus
-    # image: "gitlab-master.nvidia.com:5005/whicks/milvus:${TAG}"
-    image: milvusdb/milvus:v2.3.0-gpu
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:${TAG}"
     command: ["milvus", "run", "standalone"]
     environment:
       ETCD_ENDPOINTS: etcd:2379
