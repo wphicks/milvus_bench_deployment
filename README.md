@@ -15,15 +15,19 @@ pip install -r requirements.txt
 ## Usage
 ### TL;DR
 ```
-ansible-playbook -i hosts.ini setup.yaml
+git clone git@github.com:wphicks/milvus_bench_deployment.git
+cd milvus_bench_deployment
+ansible-playbook -i hosts.ini setup.yml
 ```
-Open http://localhost:8502 from a browser for benchmarking.
-Open http://localhost:8888 from a browser for Jupyter with access to Milvus
+
+- Open http://localhost:8502 from a browser for benchmarking.
+
+- Open http://localhost:8888 from a browser for Jupyter with access to Milvus
 server.
-Run `./show_jupyter_token` to get login token
+- Run `./show_jupyter_token` to get login token
 
 ### Details
-The setup.yaml playbook will try to pull prebuilt containers if it can and then
+The setup.yml playbook will try to pull prebuilt containers if it can and then
 build Milvus and VectorDBBench if it cannot. Containers are tagged by the
 commit sha of _this_ repo. If the repo state is not clean or a tag
 corresponding to the current commit sha cannot be pulled from the registry, the
