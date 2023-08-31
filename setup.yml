@@ -35,7 +35,7 @@
       environment:
         TAG: "{{ commit.stdout }}"
       ignore_errors: true
-      when: repo_status.rc != 0
+      when: repo_status.rc == 0
       register: pull_milvus
 
     - name: Clean Milvus build
@@ -78,7 +78,7 @@
       environment:
         TAG: "{{ commit.stdout }}"
       register: build_milvus_image
-      when: build_milvus_image is succeeded and repo_status.rc != 0
+      when: build_milvus_image is succeeded and repo_status.rc == 0
       ignore_errors: true
 
     - name: Clone VectorDBBench
@@ -94,7 +94,7 @@
       environment:
         TAG: "{{ commit.stdout }}"
       ignore_errors: true
-      when: repo_status.rc != 0
+      when: repo_status.rc == 0
       register: pull_vdbb
 
     - name: Build VectorDBBench Docker image
@@ -112,7 +112,7 @@
         chdir: "{{ inventory_dir }}"
       environment:
         TAG: "{{ commit.stdout }}"
-      when: build_vdbb_image is succeeded and repo_status.rc != 0
+      when: build_vdbb_image is succeeded and repo_status.rc == 0
       ignore_errors: true
 
     - name: Create 'volumes' directory
