@@ -129,6 +129,34 @@
       when: build_vdbb_image is defined and build_vdbb_image.changed and repo_status.rc == 0
       ignore_errors: true
 
+    - name: Pull Jupyter Docker image
+      command: "{{ dcexec }} pull jupyter"
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}"
+      ignore_errors: true
+      when: repo_status.rc == 0
+      register: pull_jupyter
+
+    - name: Build Jupyter Docker image
+      command: "{{ dcexec }} build jupyter"
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}"
+      register: build_jupyter_image
+      when: pull_jupyter is failed or pull_jupyter is skipped
+
+    - name: Push Jupyter Docker image
+      command: "{{ dcexec }} push jupyter"
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}"
+      when: build_jupyter_image is defined and build_jupyter_image.changed and repo_status.rc == 0
+      ignore_errors: true
+
     - name: Create 'volumes' directory
       file:
         path: "{{ inventory_dir }}/volumes"
