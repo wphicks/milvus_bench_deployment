@@ -72,9 +72,13 @@ services:
     image: "gitlab-master.nvidia.com:5005/whicks/milvus:jupyter-${TAG}"
     ports:
       - "8888:8888"
+    user: ${USER_STR}
+    group_add:
+      - users
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/jupyter:/home/jovyan/work
     environment:
+      - CHOWN_EXTRA="/home/jovyan/work"
       - JUPYTER_TOKEN=${JUPYTER_TOKEN:-milvus}
     build:
       context: ./jupyter
