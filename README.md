@@ -17,7 +17,9 @@ pip install -r requirements.txt
 ```
 ansible-playbook -i hosts.ini setup.yaml
 ```
-Open http://localhost:8502 from a browser.
+Open http://localhost:8502 from a browser for benchmarking.
+Open http://localhost:8888 from a browser for Jupyter with access to Milvus
+server.
 
 ### Details
 The setup.yaml playbook will try to pull prebuilt containers if it can and then
