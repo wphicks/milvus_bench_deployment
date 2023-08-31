@@ -48,7 +48,7 @@ services:
               device_ids: ["0"]
     build:
       context: ./milvus
-      dockerfile: ./milvus/build/docker/milvus/gpu/ubuntu20.04/Dockerfile
+      dockerfile: ./build/docker/milvus/gpu/ubuntu20.04/Dockerfile
     depends_on:
       - "etcd"
       - "minio"
