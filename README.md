@@ -12,18 +12,20 @@ To install:
 pip install -r requirements.txt
 ```
 
-## Deploy pre-built containers
-If you have access to the corresponding container registry, you can simply
-deploy containers that I have previously built and pushed. To do so, run
+## Usage
+### TL;DR
 ```
-ansible-playbook -i hosts.ini --tags deploy setup.yaml
+ansible-playbook -i hosts.ini setup.yaml
 ```
+Open http://localhost:8502 from a browser.
 
-Note that the first time this is run, you will be prompted to provide a
-username and password. These credentials will be used to limit access to the
-web GUI, but they provide only the most rudimentary access control. DO NOT
-DEPLOY ON THE OPEN INTERNET.
+### Details
+The setup.yaml playbook will try to pull prebuilt containers if it can and then
+build Milvus and VectorDBBench if it cannot. Containers are tagged by the
+commit sha of _this_ repo. If the repo state is not clean or a tag
+corresponding to the current commit sha cannot be pulled from the registry, the
+containers will be built.
 
-## Build Milvus and VectorDBBench
-In setup.yaml, there are tasks to clone specific commits of Milvus and
-VectorDBBench. If 
+On first run, you will be prompted to provide a username and password. This
+provides only the most rudimentary of access control to the Web GUI. DO NOT
+DEPLOY ON THE INTERNET OR AN UNTRUSTED NETWORK.
