@@ -29,7 +29,7 @@
         state: directory
 
     - name: Check if docker-compose command exists
-      command: "command -v docker-compose"
+      command: "which docker-compose"
       register: docker_compose_check
       ignore_errors: yes
 
