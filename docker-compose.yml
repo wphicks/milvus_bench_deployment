@@ -30,7 +30,7 @@ services:
 
   milvus:
     container_name: milvus-milvus
-    image: gitlab-master.nvidia.com:5005/whicks/milvus:2.3.1-preview
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:${TAG}"
     # image: milvusdb/milvus:v2.3.0-gpu
     command: ["milvus", "run", "standalone"]
     environment:
@@ -54,8 +54,8 @@ services:
       - "minio"
 
   benchmark:
-    container_name: milvus-vectordbbench
-    image: gitlab-master.nvidia.com:5005/whicks/milvus:vdb-2.3.1-preview
+    container_name: milvus-benchmark
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:${tag}"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/dataset:/tmp/vector_db_bench/dataset
     environment:

@@ -4,31 +4,44 @@
   connection: local
 
   tasks:
+    - name: Get short commit SHA for this repo
+      command: "git rev-parse --short HEAD"
+      args:
+        chdir: "{{ inventory_dir }}"
+      register: commit
+
+    - name: Check git status
+      command: "git diff-index --quiet HEAD -- || echo 'dirty'"
+      args:
+        chdir: "{{ inventory_dir }}"
+      register: repo_status
+
     - name: Clone Milvus
       git:
         repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
         version: dev-cagra2
-      tags:
-        - repo
-        - always
 
     - name: Create '.docker-gpu' directory
       file:
         path: "{{ inventory_dir }}/milvus/.docker-gpu"
         state: directory
-      tags:
-        - build
-        - always
+
+    - name: Pull Milvus
+      command: docker-compose pull milvus
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      when: repo_status.stdout != "dirty"
+      register: pull_milvus
 
     - name: Clean Milvus build
       command: "./build/builder_gpu.sh make clean"
       args:
         chdir: "{{ inventory_dir }}/milvus"
-      tags:
-          - build
-          - milvus-build
-          - never
+      register: clean_milvus
+      when: pull_milvus is failed || pull_milvus is skipped
 
     - name: Build Milvus libs
       command: "./build/builder_gpu.sh make milvus-gpu"
@@ -36,102 +49,104 @@
         chdir: "{{ inventory_dir }}/milvus"
       environment:
         CHECK_BUILDER: 1
-      tags:
-          - build
-          - milvus-build
-          - never
+      register: build_milvus_libs
+      when: clean_milvus is succeeded
 
     - name: Copy Milvus libs to expected location
       synchronize:
         src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
         dest: "{{ inventory_dir }}/milvus/lib/"
         delete: yes
-      tags:
-          - build
-          - milvus-build
-          - never
+      register: copy_milvus_libs
+      when: build_milvus_libs is succeeded
 
     - name: Build Milvus Docker image
       command: docker-compose build milvus
       args:
         chdir: "{{ inventory_dir }}"
-      tags:
-          - build
-          - milvus-build
-          - never
+      environment:
+        TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      register: build_milvus_image
+      when: copy_milvus_libs is succeeded
+
+    - name: Push Milvus Docker image
+      command: docker-compose push milvus
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      register: build_milvus_image
+      when: build_milvus_image is succeeded
+      ignore_errors: true
 
     - name: Clone VectorDBBench
       git:
         repo: https://github.com/wphicks/VectorDBBench.git
         dest: "{{ inventory_dir }}/VectorDBBench"
         version: dev-gpu
-      tags:
-        - repo
-        - always
+
+    - name: Pull VectorDBBench
+      command: docker-compose pull benchmark
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      when: repo_status.stdout != "dirty"
+      register: pull_vdbb
 
     - name: Build VectorDBBench Docker image
       command: docker-compose build benchmark
       args:
         chdir: "{{ inventory_dir }}"
-      tags:
-          - build
-          - vdb-build
-          - never
+      environment:
+        TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      register: build_vdbb_image
+      when: pull_vdbb is failed || pull_vdbb is skipped
+
+    - name: Push VectorDBBench Docker image
+      command: docker-compose push benchmark
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      when: build_vdbb is succeeded
+      ignore_errors: true
 
     - name: Create 'volumes' directory
       file:
         path: "{{ inventory_dir }}/volumes"
         state: directory
-      tags:
-        - setup
-        - always
 
     - name: Create 'volumes/etcd' directory
       file:
         path: "{{ inventory_dir }}/volumes/etcd"
         state: directory
-      tags:
-        - setup
-        - always
 
     - name: Create 'volumes/minio' directory
       file:
         path: "{{ inventory_dir }}/volumes/minio"
         state: directory
-      tags:
-        - setup
-        - always
 
     - name: Create 'volumes/milvus' directory
       file:
         path: "{{ inventory_dir }}/volumes/milvus"
         state: directory
-      tags:
-        - setup
-        - always
 
     - name: Create 'volumes/dataset' directory
       file:
         path: "{{ inventory_dir }}/volumes/dataset"
         state: directory
-      tags:
-        - setup
-        - always
 
     - name: Create 'volumes/results' directory
       file:
         path: "{{ inventory_dir }}/volumes/results"
         state: directory
-      tags:
-        - setup
-        - always
 
     - name: Check if .htpasswd file exists
       stat:
         path: nginx/.htpasswd
       register: htpasswd_file
       tags:
-        - deploy
         - credentials
 
     - pause:
@@ -141,7 +156,6 @@
       register: username
       no_log: true
       tags:
-        - deploy
         - credentials
 
     - pause:
@@ -151,7 +165,6 @@
       register: password
       no_log: true
       tags:
-        - deploy
         - credentials
 
     - name: Run docker command to create .htpasswd entry
@@ -160,7 +173,6 @@
       no_log: true
       register: credentials_line
       tags:
-        - deploy
         - credentials
 
     - name: Append to .htpasswd
@@ -170,27 +182,16 @@
         create: yes
       when: credentials_line is changed
       tags:
-        - deploy
         - credentials
-
-    - name: Pull Milvus and VectorDBBench if not building
-      command: docker-compose pull
-      args:
-        chdir: "{{ inventory_dir }}"
-      when: "'build' not in (ansible_run_tags | default([])) and 'vdb-build' not in (ansible_run_tags | default([])) and 'milvus-build' not in (ansible_run_tags | default([]))"
-      tags:
-        - deploy
 
     - name: Confirm Docker network available
       docker_network:
         name: milvus
         state: present
-      tags:
-        - deploy
 
     - name: Deploy Milvus and VectorDBBench
-      command: docker-compose up -d
+      command: docker-compose up -d --remove-orphans
       args:
         chdir: "{{ inventory_dir }}"
-      tags:
-        - deploy
+      environment:
+        TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
