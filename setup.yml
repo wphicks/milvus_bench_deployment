@@ -145,6 +145,11 @@
         path: "{{ inventory_dir }}/volumes/results"
         state: directory
 
+    - name: Create 'volumes/jupyter' directory
+      file:
+        path: "{{ inventory_dir }}/volumes/jupyter"
+        state: directory
+
     - name: Check if .htpasswd file exists
       stat:
         path: nginx/.htpasswd
@@ -198,3 +203,5 @@
         chdir: "{{ inventory_dir }}"
       environment:
         TAG: "{{ commit.stdout }}"
+        JUPYTER_TOKEN: "{{ password }}"
+      no_log: true

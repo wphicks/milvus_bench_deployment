@@ -67,6 +67,19 @@ services:
       context: ./
       dockerfile: Dockerfile
 
+  jupyter:
+    container_name: milvus-jupyter
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:jupyter-${TAG}"
+    ports:
+      - "8888:8888"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/jupyter:/home/jovyan/work
+    environment:
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-milvus}
+    build:
+      context: ./jupyter
+      dockerfile: ./Dockerfile
+
   nginx:
     image: nginx
     ports:
