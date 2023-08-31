@@ -20,6 +20,7 @@ ansible-playbook -i hosts.ini setup.yaml
 Open http://localhost:8502 from a browser for benchmarking.
 Open http://localhost:8888 from a browser for Jupyter with access to Milvus
 server.
+Run `./show_jupyter_token` to get login token
 
 ### Details
 The setup.yaml playbook will try to pull prebuilt containers if it can and then

@@ -79,7 +79,6 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/jupyter:/home/jovyan/work
     environment:
       - CHOWN_EXTRA="/home/jovyan/work"
-      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-milvus}
     build:
       context: ./jupyter
       dockerfile: ./Dockerfile

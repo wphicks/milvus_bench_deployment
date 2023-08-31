@@ -225,6 +225,4 @@
         chdir: "{{ inventory_dir }}"
       environment:
         TAG: "{{ commit.stdout }}"
-        JUPYTER_TOKEN: "{{ password.user_input }}"
         USER_STR: "{{ uid.stdout }}:{{ gid.stdout }}"
-      no_log: true
