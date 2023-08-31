@@ -43,7 +43,7 @@
 
 
     - name: Pull Milvus
-      command: {{ dcexec }} pull milvus
+      command: "{{ dcexec }} pull milvus"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
@@ -77,7 +77,7 @@
       when: build_milvus_libs is defined and build_milvus_libs.changed
 
     - name: Build Milvus Docker image
-      command: {{ dcexec }} build milvus
+      command: "{{ dcexec }} build milvus"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
@@ -86,7 +86,7 @@
       when: copy_milvus_libs is defined and copy_milvus_libs.changed
 
     - name: Push Milvus Docker image
-      command: {{ dcexec }} push milvus
+      command: "{{ dcexec }} push milvus"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
@@ -102,7 +102,7 @@
         version: dev-gpu
 
     - name: Pull VectorDBBench
-      command: {{ dcexec }} pull benchmark
+      command: "{{ dcexec }} pull benchmark"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
@@ -112,7 +112,7 @@
       register: pull_vdbb
 
     - name: Build VectorDBBench Docker image
-      command: {{ dcexec }} build benchmark
+      command: "{{ dcexec }} build benchmark"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
@@ -121,7 +121,7 @@
       when: pull_vdbb is failed or pull_vdbb is skipped
 
     - name: Push VectorDBBench Docker image
-      command: {{ dcexec }} push benchmark
+      command: "{{ dcexec }} push benchmark"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
@@ -220,7 +220,7 @@
       register: gid
 
     - name: Deploy Milvus and VectorDBBench
-      command: {{ dcexec }} up -d --remove-orphans
+      command: "{{ dcexec }} up -d --remove-orphans"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
