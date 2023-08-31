@@ -55,7 +55,7 @@ services:
 
   benchmark:
     container_name: milvus-benchmark
-    image: "gitlab-master.nvidia.com:5005/whicks/milvus:${tag}"
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:${TAG}"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/dataset:/tmp/vector_db_bench/dataset
     environment:
@@ -63,8 +63,6 @@ services:
       - STREAMLIT_CONFIG_SERVER_ENABLECORS=false
     depends_on:
       - "milvus"
-        # ports:
-        # - "8501:8501"
     build:
       context: ./
       dockerfile: Dockerfile

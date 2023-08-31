@@ -33,6 +33,7 @@
         chdir: "{{ inventory_dir }}"
       environment:
         TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      ignore_errors: true
       when: repo_status.stdout != "dirty"
       register: pull_milvus
 
@@ -91,6 +92,7 @@
         chdir: "{{ inventory_dir }}"
       environment:
         TAG: "{{ commit.stdout }}-{{ repo_status.stdout }}"
+      ignore_errors: true
       when: repo_status.stdout != "dirty"
       register: pull_vdbb
 
