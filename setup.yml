@@ -21,11 +21,26 @@
       git:
         repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
-        version: dev-cagra2
+        version: dev-230_stable
 
     - name: Create '.docker-gpu' directory
       file:
         path: "{{ inventory_dir }}/milvus/.docker-gpu"
+        state: directory
+
+    - name: Create '.docker-gpu/conan' directory
+      file:
+        path: "{{ inventory_dir }}/milvus/.docker-gpu/conan"
+        state: directory
+
+    - name: Create '.docker-gpu/ccache' directory
+      file:
+        path: "{{ inventory_dir }}/milvus/.docker-gpu/ccache"
+        state: directory
+
+    - name: Create '.docker-gpu/go' directory
+      file:
+        path: "{{ inventory_dir }}/milvus/.docker-gpu/go"
         state: directory
 
     - name: Check if docker-compose command exists
@@ -41,211 +56,218 @@
         dcexec: "docker compose"
       when: docker_compose_check.rc != 0
 
-
-      # - name: Pull Milvus
-      #   command: "{{ dcexec }} pull milvus"
-      #   args:
-      #     chdir: "{{ inventory_dir }}"
-      #   environment:
-      #     TAG: "{{ commit.stdout }}"
-      #   ignore_errors: true
-      #   when: repo_status.rc == 0
-      #   register: pull_milvus
-
-      # - name: Clean Milvus build
-      #   command: "./build/builder_gpu.sh make clean"
-      #   args:
-      #     chdir: "{{ inventory_dir }}/milvus"
-      #   register: clean_milvus
-      #   when: pull_milvus is failed or pull_milvus is skipped
-
-      # - name: Build Milvus libs
-      #   command: "./build/builder_gpu.sh make milvus-gpu"
-      #   args:
-      #     chdir: "{{ inventory_dir }}/milvus"
-      #   environment:
-      #     CHECK_BUILDER: 1
-      #   register: build_milvus_libs
-      #   when: clean_milvus is defined and clean_milvus.changed
-
-      # - name: Copy Milvus libs to expected location
-      #   synchronize:
-      #     src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
-      #     dest: "{{ inventory_dir }}/milvus/lib/"
-      #     delete: yes
-      #   register: copy_milvus_libs
-      #   when: build_milvus_libs is defined and build_milvus_libs.changed
-
-      # - name: Build Milvus Docker image
-      #   command: "{{ dcexec }} build milvus"
-      #   args:
-      #     chdir: "{{ inventory_dir }}"
-      #   environment:
-      #     TAG: "{{ commit.stdout }}"
-      #   register: build_milvus_image
-      #   when: copy_milvus_libs is defined and copy_milvus_libs.changed
-
-      # - name: Push Milvus Docker image
-      #   command: "{{ dcexec }} push milvus"
-      #   args:
-      #     chdir: "{{ inventory_dir }}"
-      #   environment:
-      #     TAG: "{{ commit.stdout }}"
-      #   register: build_milvus_image
-      #   when: build_milvus_image is defined and build_milvus_image.changed and repo_status.rc == 0
-      #   ignore_errors: true
-
-    - name: Clone VectorDBBench
-      git:
-        repo: https://github.com/wphicks/VectorDBBench.git
-        dest: "{{ inventory_dir }}/VectorDBBench"
-        version: dev-gpu
-
-    - name: Pull VectorDBBench
-      command: "{{ dcexec }} pull benchmark"
+    - name: Pull Milvus
+      command: "{{ dcexec }} pull milvus"
       args:
         chdir: "{{ inventory_dir }}"
       environment:
         TAG: "{{ commit.stdout }}"
       ignore_errors: true
       when: repo_status.rc == 0
-      register: pull_vdbb
+      register: pull_milvus
 
-    - name: Build VectorDBBench Docker image
-      command: "{{ dcexec }} build benchmark"
+    - name: Build Milvus builder
+      command: "docker build -f build.Dockerfile . -t milvus_builder"
       args:
         chdir: "{{ inventory_dir }}"
-      environment:
-        TAG: "{{ commit.stdout }}"
-      register: build_vdbb_image
-      when: pull_vdbb is failed or pull_vdbb is skipped
-
-    - name: Push VectorDBBench Docker image
-      command: "{{ dcexec }} push benchmark"
-      args:
-        chdir: "{{ inventory_dir }}"
-      environment:
-        TAG: "{{ commit.stdout }}"
-      when: build_vdbb_image is defined and build_vdbb_image.changed and repo_status.rc == 0
-      ignore_errors: true
-
-    - name: Pull Jupyter Docker image
-      command: "{{ dcexec }} pull jupyter"
-      args:
-        chdir: "{{ inventory_dir }}"
-      environment:
-        TAG: "{{ commit.stdout }}"
-      ignore_errors: true
       when: repo_status.rc == 0
-      register: pull_jupyter
+      when: pull_milvus is failed or pull_milvus is skipped
 
-    - name: Build Jupyter Docker image
-      command: "{{ dcexec }} build jupyter"
+    # TODO(wphicks)
+
+        # - name: Clean Milvus build
+        #   command: "./milvus_make clean"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   register: clean_milvus
+        #   when: pull_milvus is failed or pull_milvus is skipped
+
+    - name: Build Milvus libs
+      command: "./milvus_make milvus"
       args:
         chdir: "{{ inventory_dir }}"
-      environment:
-        TAG: "{{ commit.stdout }}"
-      register: build_jupyter_image
-      when: pull_jupyter is failed or pull_jupyter is skipped
+      register: build_milvus_libs
+        # when: clean_milvus is defined and clean_milvus.changed
+      when: pull_milvus is failed or pull_milvus is skipped
 
-    - name: Push Jupyter Docker image
-      command: "{{ dcexec }} push jupyter"
-      args:
-        chdir: "{{ inventory_dir }}"
-      environment:
-        TAG: "{{ commit.stdout }}"
-      when: build_jupyter_image is defined and build_jupyter_image.changed and repo_status.rc == 0
-      ignore_errors: true
+        # - name: Copy Milvus libs to expected location
+        #   synchronize:
+        #     src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
+        #     dest: "{{ inventory_dir }}/milvus/lib/"
+        #     delete: yes
+        #   register: copy_milvus_libs
+        #   when: build_milvus_libs is defined and build_milvus_libs.changed
 
-    - name: Create 'volumes' directory
-      file:
-        path: "{{ inventory_dir }}/volumes"
-        state: directory
+        # - name: Build Milvus Docker image
+        #   command: "{{ dcexec }} build milvus"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   register: build_milvus_image
+        #   when: copy_milvus_libs is defined and copy_milvus_libs.changed
 
-    - name: Create 'volumes/etcd' directory
-      file:
-        path: "{{ inventory_dir }}/volumes/etcd"
-        state: directory
+        # - name: Push Milvus Docker image
+        #   command: "{{ dcexec }} push milvus"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   register: build_milvus_image
+        #   when: build_milvus_image is defined and build_milvus_image.changed and repo_status.rc == 0
+        #   ignore_errors: true
 
-    - name: Create 'volumes/minio' directory
-      file:
-        path: "{{ inventory_dir }}/volumes/minio"
-        state: directory
+        # - name: Clone VectorDBBench
+        #   git:
+        #     repo: https://github.com/wphicks/VectorDBBench.git
+        #     dest: "{{ inventory_dir }}/VectorDBBench"
+        #     version: dev-gpu
 
-    - name: Create 'volumes/milvus' directory
-      file:
-        path: "{{ inventory_dir }}/volumes/milvus"
-        state: directory
+        # - name: Pull VectorDBBench
+        #   command: "{{ dcexec }} pull benchmark"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   ignore_errors: true
+        #   when: repo_status.rc == 0
+        #   register: pull_vdbb
 
-    - name: Create 'volumes/dataset' directory
-      file:
-        path: "{{ inventory_dir }}/volumes/dataset"
-        state: directory
+        # - name: Build VectorDBBench Docker image
+        #   command: "{{ dcexec }} build benchmark"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   register: build_vdbb_image
+        #   when: pull_vdbb is failed or pull_vdbb is skipped
 
-    - name: Create 'volumes/results' directory
-      file:
-        path: "{{ inventory_dir }}/volumes/results"
-        state: directory
+        # - name: Push VectorDBBench Docker image
+        #   command: "{{ dcexec }} push benchmark"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   when: build_vdbb_image is defined and build_vdbb_image.changed and repo_status.rc == 0
+        #   ignore_errors: true
 
-    - name: Create 'volumes/jupyter' directory
-      file:
-        path: "{{ inventory_dir }}/volumes/jupyter"
-        state: directory
+        # - name: Pull Jupyter Docker image
+        #   command: "{{ dcexec }} pull jupyter"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   ignore_errors: true
+        #   when: repo_status.rc == 0
+        #   register: pull_jupyter
 
-    - name: Check if .htpasswd file exists
-      stat:
-        path: nginx/.htpasswd
-      register: htpasswd_file
-      tags:
-        - credentials
+        # - name: Build Jupyter Docker image
+        #   command: "{{ dcexec }} build jupyter"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   register: build_jupyter_image
+        #   when: pull_jupyter is failed or pull_jupyter is skipped
 
-    - pause:
-        prompt: "Enter username:"
-        echo: true
-      when: "(htpasswd_file.stat.exists == false) or 'credentials' in (ansible_run_tags | default([]))"
-      register: username
-      no_log: true
-      tags:
-        - credentials
+        # - name: Push Jupyter Docker image
+        #   command: "{{ dcexec }} push jupyter"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #   when: build_jupyter_image is defined and build_jupyter_image.changed and repo_status.rc == 0
+        #   ignore_errors: true
 
-    - pause:
-        prompt: "Enter password:"
-        echo: false
-      when: "(htpasswd_file.stat.exists == false) or 'credentials' in (ansible_run_tags | default([]))"
-      register: password
-      no_log: true
-      tags:
-        - credentials
+        # - name: Create 'volumes' directory
+        #   file:
+        #     path: "{{ inventory_dir }}/volumes"
+        #     state: directory
 
-    - name: Run docker command to create .htpasswd entry
-      command: "docker run --rm xmartlabs/htpasswd {{ username.user_input }} {{ password.user_input }}"
-      when: "htpasswd_file.stat.exists == false or 'credentials' in (ansible_run_tags | default([]))"
-      no_log: true
-      register: credentials_line
-      tags:
-        - credentials
+        # - name: Create 'volumes/etcd' directory
+        #   file:
+        #     path: "{{ inventory_dir }}/volumes/etcd"
+        #     state: directory
 
-    - name: Append to .htpasswd
-      lineinfile:
-        path: "nginx/.htpasswd"
-        line: "{{ credentials_line.stdout }}"
-        create: yes
-      when: credentials_line is changed
-      tags:
-        - credentials
+        # - name: Create 'volumes/minio' directory
+        #   file:
+        #     path: "{{ inventory_dir }}/volumes/minio"
+        #     state: directory
 
-    - name: Get uid of user
-      command: "id -u"
-      register: uid
+        # - name: Create 'volumes/milvus' directory
+        #   file:
+        #     path: "{{ inventory_dir }}/volumes/milvus"
+        #     state: directory
 
-    - name: Get uid of user
-      command: "id -g"
-      register: gid
+        # - name: Create 'volumes/dataset' directory
+        #   file:
+        #     path: "{{ inventory_dir }}/volumes/dataset"
+        #     state: directory
 
-    - name: Deploy Milvus and VectorDBBench
-      command: "{{ dcexec }} up -d --remove-orphans"
-      args:
-        chdir: "{{ inventory_dir }}"
-      environment:
-        TAG: "{{ commit.stdout }}"
-        USER_STR: "{{ uid.stdout }}:{{ gid.stdout }}"
+        # - name: Create 'volumes/results' directory
+        #   file:
+        #     path: "{{ inventory_dir }}/volumes/results"
+        #     state: directory
+
+        # - name: Create 'volumes/jupyter' directory
+        #   file:
+        #     path: "{{ inventory_dir }}/volumes/jupyter"
+        #     state: directory
+
+        # - name: Check if .htpasswd file exists
+        #   stat:
+        #     path: nginx/.htpasswd
+        #   register: htpasswd_file
+        #   tags:
+        #     - credentials
+
+        # - pause:
+        #     prompt: "Enter username:"
+        #     echo: true
+        #   when: "(htpasswd_file.stat.exists == false) or 'credentials' in (ansible_run_tags | default([]))"
+        #   register: username
+        #   no_log: true
+        #   tags:
+        #     - credentials
+
+        # - pause:
+        #     prompt: "Enter password:"
+        #     echo: false
+        #   when: "(htpasswd_file.stat.exists == false) or 'credentials' in (ansible_run_tags | default([]))"
+        #   register: password
+        #   no_log: true
+        #   tags:
+        #     - credentials
+
+        # - name: Run docker command to create .htpasswd entry
+        #   command: "docker run --rm xmartlabs/htpasswd {{ username.user_input }} {{ password.user_input }}"
+        #   when: "htpasswd_file.stat.exists == false or 'credentials' in (ansible_run_tags | default([]))"
+        #   no_log: true
+        #   register: credentials_line
+        #   tags:
+        #     - credentials
+
+        # - name: Append to .htpasswd
+        #   lineinfile:
+        #     path: "nginx/.htpasswd"
+        #     line: "{{ credentials_line.stdout }}"
+        #     create: yes
+        #   when: credentials_line is changed
+        #   tags:
+        #     - credentials
+
+        # - name: Get uid of user
+        #   command: "id -u"
+        #   register: uid
+
+        # - name: Get uid of user
+        #   command: "id -g"
+        #   register: gid
+
+        # - name: Deploy Milvus and VectorDBBench
+        #   command: "{{ dcexec }} up -d --remove-orphans"
+        #   args:
+        #     chdir: "{{ inventory_dir }}"
+        #   environment:
+        #     TAG: "{{ commit.stdout }}"
+        #     USER_STR: "{{ uid.stdout }}:{{ gid.stdout }}"
