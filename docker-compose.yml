@@ -90,6 +90,3 @@ services:
       - "benchmark"
     volumes:
       - ./nginx:/etc/nginx/:ro
-networks:
-  default:
-    name: milvus

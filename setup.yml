@@ -234,11 +234,6 @@
       tags:
         - credentials
 
-    - name: Confirm Docker network available
-      docker_network:
-        name: milvus
-        state: present
-
     - name: Get uid of user
       command: "id -u"
       register: uid
