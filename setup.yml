@@ -60,21 +60,13 @@
       when: pull_milvus is failed or pull_milvus is skipped
 
     - name: Build Milvus libs
-      command: "./build/builder_gpu.sh make milvus-gpu"
+      command: "./build/builder_gpu.sh make gpu-install"
       args:
         chdir: "{{ inventory_dir }}/milvus"
       environment:
         CHECK_BUILDER: 1
       register: build_milvus_libs
       when: clean_milvus is defined and clean_milvus.changed
-
-    - name: Copy Milvus libs to expected location
-      synchronize:
-        src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
-        dest: "{{ inventory_dir }}/milvus/lib/"
-        delete: yes
-      register: copy_milvus_libs
-      when: build_milvus_libs is defined and build_milvus_libs.changed
 
     - name: Build Milvus Docker image
       command: "{{ dcexec }} build milvus"
