@@ -1,0 +1,11 @@
+#!/bin/bash
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+docker image inspect milvus_builder --format="" || \
+    docker build -t milvus_builder -f build.Dockerfile .
+docker run \
+    -v $PWD/milvus/:/workspace \
+    -v $PWD/milvus/.docker-gpu/ccache:/root/.ccache \
+    -v $PWD/milvus/.docker-gpu/conan:/root/.conan \
+    -v $PWD/milvus/.docker-gpu/go:/go/pkg/mod \
+    --rm \
+    milvus_builder $@

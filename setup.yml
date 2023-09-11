@@ -21,11 +21,26 @@
       git:
         repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
-        version: branch-2.3.1
+        version: dev-cagra
 
     - name: Create '.docker-gpu' directory
       file:
         path: "{{ inventory_dir }}/milvus/.docker-gpu"
+        state: directory
+
+    - name: Create '.docker-gpu/conan' directory
+      file:
+        path: "{{ inventory_dir }}/milvus/.docker-gpu/conan"
+        state: directory
+
+    - name: Create '.docker-gpu/ccache' directory
+      file:
+        path: "{{ inventory_dir }}/milvus/.docker-gpu/ccache"
+        state: directory
+
+    - name: Create '.docker-gpu/go' directory
+      file:
+        path: "{{ inventory_dir }}/milvus/.docker-gpu/go"
         state: directory
 
     - name: Check if docker-compose command exists
@@ -41,7 +56,6 @@
         dcexec: "docker compose"
       when: docker_compose_check.rc != 0
 
-
     - name: Pull Milvus
       command: "{{ dcexec }} pull milvus"
       args:
@@ -52,23 +66,21 @@
       when: repo_status.rc == 0
       register: pull_milvus
 
-    - name: Build Milvus libs
+    - name: Clean Milvus build
       command: "./build/builder_gpu.sh make milvus-gpu"
+      args:
+        chdir: "{{ inventory_dir }}"
+      register: clean_milvus
+      when: pull_milvus is failed or pull_milvus is skipped
+
+    - name: Build Milvus libs
+      command: "./build/builder_gpu.sh make gpu-install"
       args:
         chdir: "{{ inventory_dir }}/milvus"
       environment:
         CHECK_BUILDER: 1
       register: build_milvus_libs
-      when: pull_milvus is failed or pull_milvus is skipped
-      # when: clean_milvus is defined and clean_milvus.changed
-
-    - name: Copy Milvus libs to expected location
-      synchronize:
-        src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
-        dest: "{{ inventory_dir }}/milvus/lib/"
-        delete: yes
-      register: copy_milvus_libs
-      when: build_milvus_libs is defined and build_milvus_libs.changed
+      when: clean_milvus is defined and clean_milvus.changed
 
     - name: Build Milvus Docker image
       command: "{{ dcexec }} build milvus"
