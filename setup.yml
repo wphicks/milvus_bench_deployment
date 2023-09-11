@@ -21,7 +21,7 @@
       git:
         repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
-        version: dev-cagra2
+        version: master
 
     - name: Create '.docker-gpu' directory
       file:
@@ -42,58 +42,52 @@
       when: docker_compose_check.rc != 0
 
 
-      # - name: Pull Milvus
-      #   command: "{{ dcexec }} pull milvus"
-      #   args:
-      #     chdir: "{{ inventory_dir }}"
-      #   environment:
-      #     TAG: "{{ commit.stdout }}"
-      #   ignore_errors: true
-      #   when: repo_status.rc == 0
-      #   register: pull_milvus
+    - name: Pull Milvus
+      command: "{{ dcexec }} pull milvus"
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}"
+      ignore_errors: true
+      when: repo_status.rc == 0
+      register: pull_milvus
 
-      # - name: Clean Milvus build
-      #   command: "./build/builder_gpu.sh make clean"
-      #   args:
-      #     chdir: "{{ inventory_dir }}/milvus"
-      #   register: clean_milvus
-      #   when: pull_milvus is failed or pull_milvus is skipped
+    - name: Build Milvus libs
+      command: "./build/builder_gpu.sh make milvus-gpu"
+      args:
+        chdir: "{{ inventory_dir }}/milvus"
+      environment:
+        CHECK_BUILDER: 1
+      register: build_milvus_libs
+      when: pull_milvus is failed or pull_milvus is skipped
+      # when: clean_milvus is defined and clean_milvus.changed
 
-      # - name: Build Milvus libs
-      #   command: "./build/builder_gpu.sh make milvus-gpu"
-      #   args:
-      #     chdir: "{{ inventory_dir }}/milvus"
-      #   environment:
-      #     CHECK_BUILDER: 1
-      #   register: build_milvus_libs
-      #   when: clean_milvus is defined and clean_milvus.changed
+    - name: Copy Milvus libs to expected location
+      synchronize:
+        src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
+        dest: "{{ inventory_dir }}/milvus/lib/"
+        delete: yes
+      register: copy_milvus_libs
+      when: build_milvus_libs is defined and build_milvus_libs.changed
 
-      # - name: Copy Milvus libs to expected location
-      #   synchronize:
-      #     src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
-      #     dest: "{{ inventory_dir }}/milvus/lib/"
-      #     delete: yes
-      #   register: copy_milvus_libs
-      #   when: build_milvus_libs is defined and build_milvus_libs.changed
+    - name: Build Milvus Docker image
+      command: "{{ dcexec }} build milvus"
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}"
+      register: build_milvus_image
+      when: copy_milvus_libs is defined and copy_milvus_libs.changed
 
-      # - name: Build Milvus Docker image
-      #   command: "{{ dcexec }} build milvus"
-      #   args:
-      #     chdir: "{{ inventory_dir }}"
-      #   environment:
-      #     TAG: "{{ commit.stdout }}"
-      #   register: build_milvus_image
-      #   when: copy_milvus_libs is defined and copy_milvus_libs.changed
-
-      # - name: Push Milvus Docker image
-      #   command: "{{ dcexec }} push milvus"
-      #   args:
-      #     chdir: "{{ inventory_dir }}"
-      #   environment:
-      #     TAG: "{{ commit.stdout }}"
-      #   register: build_milvus_image
-      #   when: build_milvus_image is defined and build_milvus_image.changed and repo_status.rc == 0
-      #   ignore_errors: true
+    - name: Push Milvus Docker image
+      command: "{{ dcexec }} push milvus"
+      args:
+        chdir: "{{ inventory_dir }}"
+      environment:
+        TAG: "{{ commit.stdout }}"
+      register: build_milvus_image
+      when: build_milvus_image is defined and build_milvus_image.changed and repo_status.rc == 0
+      ignore_errors: true
 
     - name: Clone VectorDBBench
       git:
