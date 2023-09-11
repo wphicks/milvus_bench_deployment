@@ -28,21 +28,6 @@
         path: "{{ inventory_dir }}/milvus/.docker-gpu"
         state: directory
 
-    - name: Create '.docker-gpu/conan' directory
-      file:
-        path: "{{ inventory_dir }}/milvus/.docker-gpu/conan"
-        state: directory
-
-    - name: Create '.docker-gpu/ccache' directory
-      file:
-        path: "{{ inventory_dir }}/milvus/.docker-gpu/ccache"
-        state: directory
-
-    - name: Create '.docker-gpu/go' directory
-      file:
-        path: "{{ inventory_dir }}/milvus/.docker-gpu/go"
-        state: directory
-
     - name: Check if docker-compose command exists
       command: "which docker-compose"
       register: docker_compose_check
@@ -67,9 +52,9 @@
       register: pull_milvus
 
     - name: Clean Milvus build
-      command: "./build/builder_gpu.sh make milvus-gpu"
+      command: "./build/builder_gpu.sh make clean"
       args:
-        chdir: "{{ inventory_dir }}"
+        chdir: "{{ inventory_dir }}/milvus"
       register: clean_milvus
       when: pull_milvus is failed or pull_milvus is skipped
 
