@@ -21,7 +21,7 @@
       git:
         repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
-        version: master
+        version: branch-2.3.1
 
     - name: Create '.docker-gpu' directory
       file:
