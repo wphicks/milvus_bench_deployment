@@ -93,7 +93,7 @@
       git:
         repo: https://github.com/wphicks/VectorDBBench.git
         dest: "{{ inventory_dir }}/VectorDBBench"
-        version: dev-ivfpq
+        version: e676857
 
     - name: Pull VectorDBBench
       command: "{{ dcexec }} pull benchmark"
