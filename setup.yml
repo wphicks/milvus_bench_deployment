@@ -21,7 +21,7 @@
       git:
         repo: https://github.com/wphicks/milvus.git
         dest: "{{ inventory_dir }}/milvus"
-        version: branch-2.3.1
+        version: master
 
     - name: Create '.docker-gpu' directory
       file:
@@ -93,7 +93,7 @@
       git:
         repo: https://github.com/wphicks/VectorDBBench.git
         dest: "{{ inventory_dir }}/VectorDBBench"
-        version: dev-gpu
+        version: ed3d33b
 
     - name: Pull VectorDBBench
       command: "{{ dcexec }} pull benchmark"
