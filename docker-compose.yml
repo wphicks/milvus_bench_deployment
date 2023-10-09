@@ -30,8 +30,8 @@ services:
 
   milvus:
     container_name: milvus-milvus
-    # image: "gitlab-master.nvidia.com:5005/whicks/milvus:${TAG}"
-    image: milvusdb/milvus:v2.3.0-gpu
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:${TAG}"
+    # image: milvusdb/milvus:v2.3.0-gpu
     # image: gitlab-master.nvidia.com:5005/whicks/milvus:2.3.1-preview
     command: ["milvus", "run", "standalone"]
     environment:
@@ -46,10 +46,10 @@ services:
           devices:
             - driver: nvidia
               capabilities: ["gpu"]
-              device_ids: ["0"]
-              # build:
-              #   context: ./milvus
-              #   dockerfile: ./build/docker/milvus/gpu/ubuntu20.04/Dockerfile
+              device_ids: ["5"]
+    build:
+      context: ./milvus
+      dockerfile: ./build/docker/milvus/gpu/ubuntu20.04/Dockerfile
     depends_on:
       - "etcd"
       - "minio"

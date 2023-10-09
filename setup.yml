@@ -19,9 +19,9 @@
 
     - name: Clone Milvus
       git:
-        repo: https://github.com/wphicks/milvus.git
+        repo: https://github.com/milvus-io/milvus.git
         dest: "{{ inventory_dir }}/milvus"
-        version: master
+        version: 70cf65b05
 
     - name: Create '.docker-gpu' directory
       file:
@@ -41,7 +41,6 @@
         dcexec: "docker compose"
       when: docker_compose_check.rc != 0
 
-
     - name: Pull Milvus
       command: "{{ dcexec }} pull milvus"
       args:
@@ -52,23 +51,21 @@
       when: repo_status.rc == 0
       register: pull_milvus
 
+    - name: Clean milvus build
+      command: "./build/builder_gpu.sh make clean"
+      args:
+        chdir: "{{ inventory_dir }}/milvus"
+      register: clean_milvus
+      when: pull_milvus is failed or pull_milvus is skipped
+
     - name: Build Milvus libs
-      command: "./build/builder_gpu.sh make milvus-gpu"
+      command: "./build/builder_gpu.sh make gpu-install"
       args:
         chdir: "{{ inventory_dir }}/milvus"
       environment:
         CHECK_BUILDER: 1
       register: build_milvus_libs
-      when: pull_milvus is failed or pull_milvus is skipped
-      # when: clean_milvus is defined and clean_milvus.changed
-
-    - name: Copy Milvus libs to expected location
-      synchronize:
-        src: "{{ inventory_dir }}/milvus/cmake_build/lib/"
-        dest: "{{ inventory_dir }}/milvus/lib/"
-        delete: yes
-      register: copy_milvus_libs
-      when: build_milvus_libs is defined and build_milvus_libs.changed
+      when: clean_milvus is defined and clean_milvus.changed
 
     - name: Build Milvus Docker image
       command: "{{ dcexec }} build milvus"
@@ -77,7 +74,7 @@
       environment:
         TAG: "{{ commit.stdout }}"
       register: build_milvus_image
-      when: copy_milvus_libs is defined and copy_milvus_libs.changed
+      when: build_milvus_libs is defined and build_milvus_libs.changed
 
     - name: Push Milvus Docker image
       command: "{{ dcexec }} push milvus"
