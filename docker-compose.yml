@@ -30,15 +30,14 @@ services:
 
   milvus:
     container_name: milvus-milvus
-    # image: "gitlab-master.nvidia.com:5005/whicks/milvus:${TAG}"
-    image: milvusdb/milvus:v2.3.0-gpu
-    # image: gitlab-master.nvidia.com:5005/whicks/milvus:2.3.1-preview
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:latest"
     command: ["milvus", "run", "standalone"]
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
       KNOWHERE_STREAMS_PER_GPU: 16
     # volumes:
+    #   - ./milvus.yaml:/milvus/configs/milvus.yaml
     #   - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
     deploy:
       resources:
@@ -46,17 +45,14 @@ services:
           devices:
             - driver: nvidia
               capabilities: ["gpu"]
-              device_ids: ["0"]
-              # build:
-              #   context: ./milvus
-              #   dockerfile: ./build/docker/milvus/gpu/ubuntu20.04/Dockerfile
+              device_ids: ["3"]
     depends_on:
       - "etcd"
       - "minio"
 
   benchmark:
     container_name: milvus-benchmark
-    image: "gitlab-master.nvidia.com:5005/whicks/milvus:benchmark-${TAG}"
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:benchmark"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/dataset:/tmp/vectordb_bench/dataset
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/results:/usr/local/lib/python3.11/site-packages/vectordb_bench/results/
@@ -71,9 +67,9 @@ services:
 
   jupyter:
     container_name: milvus-jupyter
-    image: "gitlab-master.nvidia.com:5005/whicks/milvus:jupyter-${TAG}"
+    image: "gitlab-master.nvidia.com:5005/whicks/milvus:jupyter"
     ports:
-      - "8888:8888"
+      - "8889:8888"
     user: ${USER_STR}
     group_add:
       - users
